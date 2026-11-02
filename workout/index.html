@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#0f1115">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="운동일지">
+  <title>운동일지</title>
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="topbar">
+    <h1 id="title">오늘</h1>
+    <div id="topActions"></div>
+  </header>
+
+  <main id="view"></main>
+
+  <div id="timer" class="timer hidden" role="timer" aria-live="polite">
+    <div class="timer-label" id="timerLabel">휴식</div>
+    <div class="timer-time" id="timerTime">0:00</div>
+    <div class="timer-btns">
+      <button data-act="timer-add" data-sec="-15">−15</button>
+      <button data-act="timer-add" data-sec="15">+15</button>
+      <button data-act="timer-stop" class="ghost">종료</button>
+    </div>
+  </div>
+
+  <nav class="tabbar">
+    <button data-tab="today" class="active"><span>🏋️</span>오늘</button>
+    <button data-tab="history"><span>📅</span>기록</button>
+    <button data-tab="progress"><span>📈</span>진척</button>
+    <button data-tab="body"><span>⚖️</span>신체</button>
+    <button data-tab="pt"><span>✅</span>PT과제</button>
+  </nav>
+
+  <dialog id="modal"><div id="modalBody"></div></dialog>
+
+  <script src="app.js"></script>
+</body>
+</html>
