@@ -205,9 +205,10 @@ function entryCard(s, en, i) {
   const m = metricOf(ex.type, en.sets); const k = MAIN_METRIC[ex.type][0];
   const isPR = m && m[k] > 0 && m[k] > bestBefore(en.exId, s.date) && history(en.exId).some((h) => h.date < s.date);
   let h = `<div class="card" data-entry="${i}">
-    <div class="ex-head"><div class="grow">
+    <div class="ex-head">${ex.photo ? `<img class="ex-thumb" src="${ex.photo}" alt="">` : ''}<div class="grow">
       <div class="ex-name">${esc(ex.name)} ${isPR ? '<span class="tag pr">🏆 PR</span>' : ''}</div>
       <div class="muted">${T.label}${ex.note ? ' · ' + esc(ex.note) : ''}</div>
+      <a class="yt" href="${ytUrl(ex)}" target="_blank" rel="noopener">▶ 사용법 영상</a>
     </div>
     <button class="icon-btn" data-act="entry-menu" data-i="${i}" aria-label="메뉴">⋯</button></div>
     <div class="sets">`;
@@ -253,6 +254,7 @@ function openPicker() {
     $('#pickCats').innerHTML = cats.map((c) => `<button class="chip ${c === pickCat ? 'on' : ''}" data-cat="${c}">${c}</button>`).join('');
   };
   openModal(`<div class="row between"><h2 style="margin:0">운동 선택</h2><button class="icon-btn" data-act="close">✕</button></div>
+    <button class="btn primary block" data-act="snap" style="margin-top:10px">📷 기구 사진으로 추가</button>
     <input type="search" id="pickQ" placeholder="검색" style="margin:10px 0">
     <div class="chips" id="pickCats"></div>
     <div id="pickList"></div>
@@ -366,6 +368,9 @@ function settingsCard() {
       <button class="btn sm" data-act="csv">CSV 내보내기</button>
       <button class="btn sm" data-act="manage-ex">운동 목록 관리</button>
     </div>
+    <div class="sep"></div>
+    <label class="field"><span>Claude API 키 (기구 사진 인식용 · 이 폰에만 저장, 백업 파일에 포함 안 됨)</span>
+      <div class="row"><input type="password" id="apiKey" placeholder="sk-ant-..." value="${getKey() ? '••••••••' : ''}" autocomplete="off"><button class="btn sm" data-act="key-save">저장</button></div></label>
     <p class="muted">데이터는 이 기기 브라우저에만 저장됩니다. 주기적으로 백업 파일을 내보내 구글 드라이브 등에 보관하세요.</p>
   </div>`;
 }
@@ -548,6 +553,124 @@ function importJSON() {
   inp.click();
 }
 
+/* ---------- 기구 사진 인식 (Claude API) ---------- */
+// 키는 S(백업 대상)와 분리해 이 기기에만 저장. 저장소가 공개라 키를 코드에 넣지 않는다.
+const KEY_STORE = 'workoutlog.apikey';
+const getKey = () => { try { return localStorage.getItem(KEY_STORE) || ''; } catch { return ''; } };
+const setKey = (v) => { try { v ? localStorage.setItem(KEY_STORE, v) : localStorage.removeItem(KEY_STORE); } catch {} };
+const ytUrl = (ex) => 'https://www.youtube.com/results?search_query=' + encodeURIComponent(ex.yt || `${ex.name} 사용법 자세`);
+
+function pickPhoto() {
+  return new Promise((resolve) => {
+    const inp = document.createElement('input');
+    inp.type = 'file'; inp.accept = 'image/*'; inp.setAttribute('capture', 'environment');
+    inp.onchange = () => resolve(inp.files[0] || null);
+    inp.click();
+  });
+}
+// 사진을 줄여서(토큰·비용 절감) base64 JPEG로
+async function shrink(file, max, q) {
+  const url = URL.createObjectURL(file);
+  try {
+    const img = await new Promise((ok, no) => { const i = new Image(); i.onload = () => ok(i); i.onerror = no; i.src = url; });
+    const k = Math.min(1, max / Math.max(img.width, img.height));
+    const c = document.createElement('canvas'); c.width = Math.round(img.width * k); c.height = Math.round(img.height * k);
+    c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+    return c.toDataURL('image/jpeg', q);
+  } finally { URL.revokeObjectURL(url); }
+}
+
+const EQUIP_SCHEMA = {
+  type: 'object',
+  properties: {
+    is_equipment: { type: 'boolean', description: '사진에 운동기구/운동 도구가 보이면 true' },
+    name: { type: 'string', description: '한국 헬스장에서 흔히 부르는 운동 이름 (예: 랫풀다운, 레그프레스, 케이블 로우)' },
+    category: { type: 'string', enum: CATS },
+    type: { type: 'string', enum: Object.keys(TYPES), description: 'weight=무게×횟수, reps=맨몸 횟수, hold=버티기(초), cardio=유산소(분/km)' },
+    target: { type: 'string', description: '주로 쓰는 근육, 짧게 (예: 광배근·이두)' },
+    cue: { type: 'string', description: '가장 중요한 자세 포인트 한 줄 (40자 이내)' },
+    youtube_query: { type: 'string', description: '이 기구 사용법 영상을 찾을 한국어 유튜브 검색어' },
+  },
+  required: ['is_equipment', 'name', 'category', 'type', 'target', 'cue', 'youtube_query'],
+  additionalProperties: false,
+};
+
+async function identifyEquipment(dataUrl) {
+  const key = getKey();
+  const res = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'content-type': 'application/json',
+      'x-api-key': key,
+      'anthropic-version': '2026-10-21',
+      'anthropic-beta': 'server-side-fallback-2026-07-01',
+      'anthropic-dangerous-direct-browser-access': 'true', // 개인용 앱: 본인 키를 본인 폰에서만 사용
+    },
+    body: JSON.stringify({
+      model: 'claude-opus-5-5',
+      max_tokens: 4000,
+      fallbacks: 'default',
+      output_config: { effort: 'low', format: { type: 'json_schema', schema: EQUIP_SCHEMA } },
+      messages: [{
+        role: 'user',
+        content: [
+          { type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data: dataUrl.split(',')[1] } },
+          { type: 'text', text: '헬스장에서 찍은 사진입니다. 어떤 운동기구(또는 도구)인지 알아보고, 이 기구로 하는 대표 운동 하나를 운동일지에 추가할 수 있게 알려 주세요. 기구가 아니면 is_equipment=false로 답하세요.' },
+        ],
+      }],
+    }),
+  });
+  const body = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    if (res.status === 401) throw new Error('API 키가 올바르지 않습니다. 기록 탭 → 설정에서 다시 입력하세요.');
+    if (res.status === 429) throw new Error('요청이 많습니다. 잠시 후 다시 시도하세요.');
+    throw new Error(body?.error?.message || `API 오류 (${res.status})`);
+  }
+  if (body.stop_reason === 'refusal') throw new Error('이 사진은 분석할 수 없습니다. 다른 각도로 찍어 보세요.');
+  if (body.stop_reason === 'max_tokens') throw new Error('응답이 잘렸습니다. 다시 시도하세요.');
+  const text = (body.content || []).filter((b) => b.type === 'text').map((b) => b.text).join('');
+  return JSON.parse(text);
+}
+
+async function snapEquipment() {
+  if (!getKey()) {
+    openModal(`<h2>API 키가 필요해요</h2><p>기구 사진 인식은 Claude API로 동작합니다. <b>기록 탭 → 설정 · 백업</b>에서 API 키를 한 번만 저장해 주세요.</p>
+      <button class="btn primary block" data-act="go-settings">설정으로 이동</button><div style="height:8px"></div><button class="btn block" data-act="close">닫기</button>`);
+    return;
+  }
+  const file = await pickPhoto(); if (!file) return;
+  let big, thumb;
+  try { big = await shrink(file, 1024, 0.8); thumb = await shrink(file, 160, 0.7); }
+  catch { return toast('사진을 읽을 수 없습니다'); }
+  openModal(`<div class="center"><img class="snap-img" src="${thumb}" alt=""><p>🔍 기구를 알아보는 중…</p></div>`);
+  let r;
+  try { r = await identifyEquipment(big); }
+  catch (e) {
+    return openModal(`<h2>인식 실패</h2><p>${esc(e.message === 'Failed to fetch' ? '인터넷 연결을 확인하세요.' : e.message)}</p>
+      <div class="row"><button class="btn grow" data-act="close">닫기</button><button class="btn primary grow" data-act="snap">다시 찍기</button></div>`);
+  }
+  if (!r.is_equipment) {
+    return openModal(`<h2>기구를 찾지 못했어요</h2><p class="muted">사진에 운동기구가 잘 보이도록 전체를 다시 찍어 주세요.</p>
+      <div class="row"><button class="btn grow" data-act="close">닫기</button><button class="btn primary grow" data-act="snap">다시 찍기</button></div>`);
+  }
+  const existing = S.exercises.find((e) => e.name.replace(/\s/g, '') === r.name.replace(/\s/g, ''));
+  openModal(`<div class="row" style="align-items:flex-start;gap:12px"><img class="snap-img" src="${thumb}" alt="">
+      <div class="grow"><h2 style="margin:0 0 4px">${esc(r.name)}</h2><div class="muted">${esc(r.category)} · ${TYPES[r.type]?.label || ''} · ${esc(r.target)}</div></div></div>
+    <p>💡 ${esc(r.cue)}</p>
+    <a class="btn block" href="https://www.youtube.com/results?search_query=${encodeURIComponent(r.youtube_query)}" target="_blank" rel="noopener">▶ 유튜브에서 사용법 보기</a>
+    ${existing ? `<p class="muted">이미 목록에 있는 운동이에요 — 그 운동에 사진을 붙여 추가합니다.</p>` : `<label class="field" style="margin-top:10px"><span>이름 (수정 가능)</span><input type="text" id="snapName" value="${esc(r.name)}"></label>`}
+    <div class="row" style="margin-top:10px"><button class="btn grow" data-act="close">취소</button><button class="btn primary grow" id="snapAdd">오늘 운동에 추가</button></div>`);
+  $('#snapAdd').onclick = () => {
+    let ex = existing;
+    if (!ex) {
+      const ty = String(r.type).toLowerCase(); ex = { id: uid(), name: ($('#snapName').value || r.name).trim(), type: TYPES[ty] ? ty : 'weight', cat: CATS.includes(r.category) ? r.category : '기타', note: r.cue };
+      S.exercises.push(ex);
+    }
+    ex.photo = thumb; ex.yt = r.youtube_query; if (!ex.note) ex.note = r.cue;
+    save(); addExercise(ex.id);
+  };
+}
+
 /* ---------- 이벤트 ---------- */
 document.addEventListener('click', (e) => {
   const tb = e.target.closest('.tabbar button'); if (tb) return go(tb.dataset.tab);
@@ -589,6 +712,13 @@ document.addEventListener('click', (e) => {
     case 'timer-add': if (timer) timer.end += (+b.dataset.sec) * 1000; return;
     case 'timer-stop': timer && (timer.onDone = null); return stopTimer();
     case 'open-day': workDate = b.dataset.date; return go('today');
+    case 'snap': return snapEquipment();
+    case 'go-settings': closeModal(); go('history'); setTimeout(() => $('#apiKey')?.scrollIntoView({ block: 'center' }), 50); return;
+    case 'key-save': {
+      const v = $('#apiKey').value.trim();
+      if (v.startsWith('••')) return toast('이미 저장되어 있습니다');
+      setKey(v); toast(v ? 'API 키 저장됨' : 'API 키 삭제됨'); return render();
+    }
     case 'export': return download(`운동일지_백업_${today()}.json`, JSON.stringify(S, null, 1), 'application/json');
     case 'import': return importJSON();
     case 'csv': return exportCSV();

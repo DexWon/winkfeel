@@ -164,3 +164,9 @@ dialog::backdrop { background: rgba(0,0,0,.6); }
 .empty { text-align: center; color: var(--muted); padding: 30px 10px; }
 .sep { height: 1px; background: var(--line); margin: 12px 0; }
 body.timer-on { padding-bottom: calc(160px + env(safe-area-inset-bottom)); }
+.ex-thumb { width: 48px; height: 48px; object-fit: cover; border-radius: 10px; flex: none; border: 1px solid var(--line); }
+.yt { display: inline-block; margin-top: 4px; font-size: 13px; color: #f87171; text-decoration: none; }
+.snap-img { width: 96px; height: 96px; object-fit: cover; border-radius: 12px; border: 1px solid var(--line); }
+.center { text-align: center; }
+.center .snap-img { margin: 10px auto 0; display: block; }
+a.btn { display: block; text-align: center; text-decoration: none; color: var(--text); line-height: 24px; }
