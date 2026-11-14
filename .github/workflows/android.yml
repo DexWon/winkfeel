@@ -44,23 +44,39 @@ jobs:
 
       - name: Restore upload keystore
         env:
+          # 권장: 비밀값 1개 (저장소의 암호화된 키 파일을 이 암호로 연다)
+          SIGNING_PASSPHRASE: ${{ secrets.ANDROID_SIGNING_PASSPHRASE }}
+          # 예전 방식(비밀값 4개)도 계속 지원
           KEYSTORE_B64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
         run: |
-          if [ -n "$KEYSTORE_B64" ]; then
+          if [ -n "$SIGNING_PASSPHRASE" ]; then
+            openssl enc -d -aes-256-cbc -pbkdf2 -iter 200000 -in signing/upload-keystore.jks.enc -out "$RUNNER_TEMP/upload.jks" -pass env:SIGNING_PASSPHRASE
+            {
+              echo "ANDROID_KEYSTORE_PATH=$RUNNER_TEMP/upload.jks"
+              echo "ANDROID_KEYSTORE_PASSWORD=$SIGNING_PASSPHRASE"
+              echo "ANDROID_KEY_PASSWORD=$SIGNING_PASSPHRASE"
+              echo "ANDROID_KEY_ALIAS=upload"
+            } >> "$GITHUB_ENV"
+            echo "서명된 AAB(플레이스토어 업로드용)를 만듭니다."
+          elif [ -n "$KEYSTORE_B64" ]; then
             echo "$KEYSTORE_B64" | base64 -d > "$RUNNER_TEMP/upload.jks"
             echo "ANDROID_KEYSTORE_PATH=$RUNNER_TEMP/upload.jks" >> "$GITHUB_ENV"
           else
-            echo "::warning::업로드 키 비밀값이 없어 서명 안 된 빌드만 만듭니다."
+            echo "::warning::업로드 키 비밀값(ANDROID_SIGNING_PASSPHRASE)이 없어 서명 안 된 빌드만 만듭니다."
           fi
 
       - name: Build
         working-directory: app/android
         env:
           VERSION_CODE: ${{ github.run_number }}
-          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
-          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
-          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+          OLD_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          OLD_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          OLD_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
         run: |
+          # 예전 방식 비밀값이 있으면 그것을 쓴다 (권장 방식은 이전 단계에서 이미 설정됨)
+          if [ -z "$ANDROID_KEYSTORE_PASSWORD" ] && [ -n "$OLD_KEYSTORE_PASSWORD" ]; then
+            export ANDROID_KEYSTORE_PASSWORD="$OLD_KEYSTORE_PASSWORD" ANDROID_KEY_ALIAS="$OLD_KEY_ALIAS" ANDROID_KEY_PASSWORD="$OLD_KEY_PASSWORD"
+          fi
           chmod +x gradlew
           ./gradlew --no-daemon bundleRelease assembleDebug
 
@@ -85,3 +101,8 @@ jobs:
               --title "자기관리해요 테스트 설치 파일" \
               --notes "폰에서 jagigwanri-test.apk 를 눌러 설치하세요. 플레이스토어용이 아닌 테스트 빌드입니다."
           gh release upload android-test jagigwanri-test.apk --clobber
+          # 서명된 경우에만 플레이스토어 업로드용 AAB도 함께 올린다
+          if [ -n "$ANDROID_KEYSTORE_PATH" ]; then
+            cp app/build/outputs/bundle/release/app-release.aab jagigwanri-store.aab
+            gh release upload android-test jagigwanri-store.aab --clobber
+          fi

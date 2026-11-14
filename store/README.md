@@ -95,8 +95,8 @@
 
 1. **D-U-N-S 번호 발급** — 무료, 신청 후 보통 1~2주. (한국 신청처: 나이스디앤비)
 2. **구글 플레이 콘솔 가입** — play.google.com/console, 조직 계정 선택, 등록비 $25, D-U-N-S 입력
-3. **업로드 키를 GitHub에 등록** — 별도로 전달한 `upload-keystore` 파일과 안내문대로 4개 비밀값 입력
-4. **앱 빌드** — GitHub → Actions → *Android build* → **Run workflow** → 완료되면 결과물(Artifacts)에서 `.aab` 내려받기
+3. **업로드 키 암호를 GitHub에 등록** — 별도로 전달한 `GitHub에_등록할_비밀값_1개.txt` 안내대로 `ANDROID_SIGNING_PASSPHRASE` 1개만 입력 (암호화된 키 파일은 `app/signing/`에 있음)
+4. **앱 빌드** — 코드가 바뀌면 자동으로 빌드됨. 끝나면 https://github.com/DexWon/winkfeel/releases/tag/android-test 에서 `jagigwanri-store.aab` 내려받기
 5. **콘솔에서 앱 만들기** — 앱 이름 ‘자기관리해요’, 무료, 앱
 6. **Play 앱 서명 사용**(기본값) 상태로 **프로덕션 → 새 버전 만들기 → .aab 업로드**
 7. 위 1·2번 문구와 이미지, 데이터 보안, 콘텐츠 등급 작성 → **검토 제출** (보통 며칠 걸림)
