@@ -8,6 +8,7 @@ on:
     paths:
       - 'tools/commons_photos.json'
       - 'tools/fetch_commons_photos.py'
+      - '.github/workflows/fetch-photos.yml'
 
 permissions:
   contents: write
@@ -33,4 +34,6 @@ jobs:
           git add workout/img/commons workout/photos-commons.js
           if git diff --cached --quiet; then echo "변경 없음"; exit 0; fi
           git commit -m "Add Wikimedia Commons equipment photos with credits"
-          git push
+          # 그사이 다른 커밋이 올라왔으면 그 위에 얹어서 올린다
+          for i in 1 2 3; do git pull --rebase origin "$GITHUB_REF_NAME" && git push && exit 0; sleep 5; done
+          exit 1
