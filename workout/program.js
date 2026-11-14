@@ -1,7 +1,6 @@
 /* 자기관리해요 — 기본 루틴 · 기구 사용법 데이터
- * 루틴: "헬스장 기구 기반 2분할 4일 루틴" (화·목 순서 변경판)
- *   월 상체 A(미는 날) · 화 하체 B(엉덩이 펴는 날) · 수 상체 B(당기는 날) · 목 하체 A(무릎 굽히는 날)
- *   금 회복 · 토 완전 휴식 · 일 보충 A/B
+ * 루틴: "헬스장 기구 기반 2분할 루틴" (요일 대신 A→G 순서, 원본의 화·목 순서 변경 반영)
+ *   A 상체A · B 하체B · C 상체B · D 하체A · E 보충A · F 보충B · G 회복
  * 사진: img/ 폴더. 출처·라이선스는 각 사진의 credit 과 앱 '사진 출처' 화면에 표시.
  */
 'use strict';
@@ -74,52 +73,51 @@ const LIB = {
     steps: ['부위당 20~30초 반동 없이 유지', '통증이 아닌 당기는 느낌까지만'] },
 };
 
-/* 주간 루틴 (요일 index: 0=일 … 6=토). alt = 대체 가능 운동 */
+/* 순서 루틴: 요일과 상관없이 A → B → … → G → 다시 A. 마지막에 한 다음 순서를 이어서 한다.
+ * (원본 PPT의 화·목 순서를 바꿔 B=하체B, D=하체A) alt = 대체 가능 운동 */
 const ROUTINE = {
-  id: 'split2x4',
-  title: '기구 2분할 4일 루틴',
-  desc: '월·화·수·목 상체/하체 교대 4일, 금 회복 · 토 휴식, 일요일은 평소 못 다뤄본 기구 보충',
-  days: {
-    1: { label: '상체 A', title: '가슴·어깨, 미는 날', time: '5종목 · 55분', level: '중상',
+  id: 'split2x4seq',
+  title: '기구 2분할 순서 루틴',
+  desc: '요일 상관없이 A부터 G까지 차례로. 마지막에 한 다음 순서를 이어서 하세요.',
+  seq: [
+    { key: 'A', label: '상체 A', title: '가슴·어깨, 미는 날', time: '5종목 · 55분', level: '중상',
       tip: '무게는 12회를 깔끔하게 마칠 수 있는 수준에서 시작하세요.',
       items: [
         { id: 'incline_press', sets: 4, reps: '10~12' }, { id: 'decline_press', sets: 3, reps: '10~12' },
         { id: 'pec_fly', sets: 3, reps: '12~15' }, { id: 'shoulder_press', sets: 3, reps: '10~12' },
         { id: 'bent_lateral', sets: 3, reps: '15' }] },
-    2: { label: '하체 B', title: '햄스트링·둔근, 펴는 날', time: '5종목 · 55분', level: '중상',
+    { key: 'B', label: '하체 B', title: '햄스트링·둔근, 펴는 날', time: '5종목 · 55분', level: '중상',
       tip: '힙 운동은 허리를 꺾는 대신 엉덩이 수축으로 끝까지 버티는 게 핵심입니다.',
       items: [
         { id: 'hip_thrust', sets: 4, reps: '10~12' }, { id: 'monster_glute', sets: 3, reps: '12' },
         { id: 'standing_thrust', sets: 3, reps: '12' }, { id: 'leg_curl', sets: 3, reps: '12~15' },
         { id: 'hip_add', sets: 3, reps: '20' }] },
-    3: { label: '상체 B', title: '등·후면어깨, 당기는 날', time: '5종목 · 55분', level: '중상',
+    { key: 'C', label: '상체 B', title: '등·후면어깨, 당기는 날', time: '5종목 · 55분', level: '중상',
       tip: '당길 때 어깨가 으쓱 올라가면 무게를 한 단계 낮추세요.',
       items: [
         { id: 'front_pulldown', sets: 4, reps: '10~12' }, { id: 'mts_row', sets: 3, reps: '10~12' },
         { id: 'high_row', sets: 3, reps: '12' }, { id: 'tbar_row', sets: 3, reps: '10' },
         { id: 'rear_delt', sets: 3, reps: '15' }] },
-    4: { label: '하체 A', title: '대퇴사두·둔근, 미는 날', time: '5종목 · 55분', level: '중상',
+    { key: 'D', label: '하체 A', title: '대퇴사두·둔근, 미는 날', time: '5종목 · 55분', level: '중상',
       tip: '하체는 첫 세트를 가볍게 15회 돌려 관절을 데운 뒤 본세트로 들어갑니다.',
       items: [
         { id: 'leg_press', sets: 4, reps: '10~12' }, { id: 'hack_squat', sets: 3, reps: '10' },
         { id: 'squat_press', sets: 3, reps: '12' }, { id: 'leg_ext', sets: 3, reps: '15' },
         { id: 'hip_abd', sets: 3, reps: '20' }] },
-    5: { label: '회복', title: '가볍게 회복하는 날', time: '30~40분', level: '하', rest: true,
-      tip: '걷기와 스트레칭으로 혈액순환만 돕습니다.',
+    { key: 'E', label: '보충 A', title: '못 다뤄본 상체 기구 적응', time: '4종목 · 2세트', level: '하',
+      tip: 'RPE 6~7 · 세트 사이 60초 · 자세 익히기가 목적입니다.',
+      items: [
+        { id: 'assist_pullup', alt: 'wide_pulldown', sets: 2, reps: '12' }, { id: 'iso_row', sets: 2, reps: '12' },
+        { id: 'long_pull', alt: 'tbar_row', sets: 2, reps: '12' }, { id: 'bent_lateral', sets: 2, reps: '15' }] },
+    { key: 'F', label: '보충 B', title: '못 다뤄본 하체 기구 적응', time: '4종목 · 2세트', level: '하',
+      tip: 'RPE 6~7 · 통증 없는 범위에서만 움직이세요.',
+      items: [
+        { id: 'standing_abd', sets: 2, reps: '15' }, { id: 'hack_squat', sets: 2, reps: '10' },
+        { id: 'squat_press', sets: 2, reps: '12' }, { id: 'hip_add', alt: 'leg_curl', sets: 2, reps: '15' }] },
+    { key: 'G', label: '회복', title: '가볍게 회복하는 날', time: '30~40분', level: '하', rest: true,
+      tip: '걷기와 스트레칭으로 혈액순환만 돕습니다. 수면 7시간 이상 · 단백질 보충.',
       items: [{ id: 'walk', sets: 1, reps: '20~30분' }, { id: 'foam_roller', sets: 1, reps: '10분' }, { id: 'stretch', sets: 1, reps: '10분' }] },
-    6: { label: '완전 휴식', title: '쉬는 것도 운동', time: '-', level: '-', rest: true,
-      tip: '수면 7시간 이상 · 단백질 보충 · 가벼운 산책', items: [] },
-    0: { label: '보충 A/B', title: '평소 못 다뤄본 기구 적응', time: '3~4종 · 2세트', level: '하',
-      tip: 'RPE 6~7 · 세트 사이 60초 · 새 기구는 최저 중량으로 자세 익히기',
-      variants: {
-        A: { label: '보충 A · 상체', items: [
-          { id: 'assist_pullup', alt: 'wide_pulldown', sets: 2, reps: '12' }, { id: 'iso_row', sets: 2, reps: '12' },
-          { id: 'long_pull', alt: 'tbar_row', sets: 2, reps: '12' }, { id: 'bent_lateral', sets: 2, reps: '15' }] },
-        B: { label: '보충 B · 하체', items: [
-          { id: 'standing_abd', sets: 2, reps: '15' }, { id: 'hack_squat', sets: 2, reps: '10' },
-          { id: 'squat_press', sets: 2, reps: '12' }, { id: 'hip_add', alt: 'leg_curl', sets: 2, reps: '15' }] },
-      } },
-  },
+  ],
   rules: [
     ['준비', '유산소 5분 + 해당 부위 가벼운 2세트'],
     ['세트·반복', '3~4세트 · 10~15회 · 마지막 1회가 힘든 무게'],
@@ -128,7 +126,8 @@ const ROUTINE = {
     ['중단', '찌르는 통증 · 어지럼 · 호흡 곤란 시 즉시 중단'],
   ],
   notes: [
-    '4일을 연속으로 못 지킬 경우 순서를 유지한 채 하루씩 밀어도 효과는 같습니다.',
+    '날짜와 상관없이 마지막에 한 다음 순서를 이어서 하세요. 하루 쉬어도 순서는 그대로입니다.',
+    '쉬는 날은 따로 정하지 않습니다. 몸이 무거운 날은 쉬고, 다음에 이어서 하세요.',
     '3주 동안 같은 루틴이 지루해지면 종목을 1개씩만 교체합니다.',
     '통증이 2회 이상 반복되면 그 기구는 과감히 빼세요.',
     '처음 쓰는 기구는 빈 판(최저 중량)으로 10회, 자세를 눈으로 확인한 뒤 시작합니다.',

@@ -193,3 +193,6 @@ a.btn { display: block; text-align: center; text-decoration: none; color: var(--
 .chips.seg { margin-bottom: 12px; }
 .ex-thumb[data-act] { cursor: pointer; }
 .wd.is-today { border-color: var(--accent); border-width: 2px; }
+.week { grid-template-columns: repeat(7, 1fr); }
+.wd .ld { font-size: 10px; opacity: .8; }
+.lastbox { margin-top: 10px; padding: 8px 10px; border-radius: 10px; background: var(--card2); font-size: 14px; }

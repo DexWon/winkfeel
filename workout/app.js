@@ -174,17 +174,22 @@ function renderToday() {
       <div class="stat"><b>${st.doneSets}</b><span>완료 세트</span></div>
       <div class="stat"><b>${st.vol ? Math.round(st.vol).toLocaleString() : st.cardio || 0}</b><span>${st.vol ? '볼륨(kg)' : '유산소(분)'}</span></div>
     </div>`;
+    if (s.routineKey) { const D = dayOf(s.routineKey); h += `<div class="muted" style="margin:-4px 0 10px">오늘 루틴: <b class="accent">${s.routineKey} · ${esc(D.label)}</b> — ${esc(D.title)}</div>`; }
     s.entries.forEach((en, i) => { h += entryCard(s, en, i); });
     h += `<label class="field"><span>오늘 메모 (컨디션, 트레이너 피드백 등)</span>
       <textarea data-act="sess-note">${esc(s.note)}</textarea></label>`;
   } else {
-    const dw = new Date(workDate + 'T00:00:00').getDay(); const D = ROUTINE.days[dw];
-    h += `<div class="card routine-hero"><div class="muted">${WEEK[dw]}요일 루틴</div>
-      <h2 style="margin:2px 0 4px">${esc(D.label)} · ${esc(D.title)}</h2>
+    const last = lastRoutine(workDate); const nk = nextKey(last); const D = dayOf(nk);
+    h += `<div class="card routine-hero">
+      ${last ? `<div class="muted">마지막 운동: <b>${last.key} · ${esc(dayOf(last.key).label)}</b> (${fmtDate(last.date)}, ${agoText(last.date, workDate)})</div>` : `<div class="muted">처음 시작하시네요! A부터 차례로 진행합니다.</div>`}
+      <div class="small accent" style="margin-top:8px">다음 순서</div>
+      <h2 style="margin:2px 0 4px">${nk} · ${esc(D.label)} — ${esc(D.title)}</h2>
       <div class="muted">${esc(D.time)} · 강도 ${esc(D.level)}</div>
-      ${D.rest && !D.items.length ? `<p class="small">${esc(D.tip)}</p>` : `<div class="row" style="margin-top:10px">
-        <button class="btn grow" data-act="see-day" data-d="${dw}">루틴 보기</button>
-        <button class="btn primary grow" data-act="load-day" data-d="${dw}"${D.variants ? ' data-v="A"' : ''}>${D.variants ? '보충 A 불러오기' : '오늘 루틴 불러오기'}</button></div>`}
+      <div class="row" style="margin-top:10px">
+        <button class="btn grow" data-act="see-day" data-k="${nk}">루틴 보기</button>
+        <button class="btn primary grow" data-act="load-day" data-k="${nk}">${nk} 불러오기</button></div>
+      <div class="muted" style="margin-top:10px">다른 순서로 하려면</div>
+      <div class="chips" style="margin:6px 0 0">${ROUTINE.seq.map((x) => `<button class="chip ${x.key === nk ? 'on' : ''}" data-act="see-day" data-k="${x.key}">${x.key} ${esc(x.label)}</button>`).join('')}</div>
     </div>`;
     h += `<div class="empty" style="padding:14px">${workDate === today() ? '오늘' : fmtDate(workDate)} 기록이 없습니다. 루틴을 불러오거나 직접 운동을 추가하세요.</div>`;
     const rec = recentExercises(6);
@@ -247,40 +252,67 @@ function addExercise(exId) {
 }
 
 /* ---------- 루틴 ---------- */
-let routineDay = new Date().getDay();
-let routineVar = 'A';
-const altPick = {}; // `${day}-${variant}-${idx}` → 선택한 libId
+let routineKey = null; // 루틴 탭에서 보고 있는 순서 (null = 다음 순서)
+const altPick = {}; // `${key}-${idx}` → 선택한 libId
 const photosOf = (libId) => (typeof PHOTOS !== 'undefined' && PHOTOS[libId]) || [];
 const thumbOf = (ex) => ex.photo || (ex.libId && photosOf(ex.libId)[0]?.src) || '';
 const firstNum = (r) => { const m = String(r).match(/\d+/); return m ? +m[0] : 10; };
-function dayItems(d, v) { const D = ROUTINE.days[d]; return D.variants ? D.variants[v].items : D.items; }
-function itemLib(d, v, i, it) { return altPick[`${d}-${v}-${i}`] || it.id; }
+const dayOf = (k) => ROUTINE.seq.find((x) => x.key === k) || ROUTINE.seq[0];
+function itemLib(k, i, it) { return altPick[`${k}-${i}`] || it.id; }
+// 마지막으로 한 순서: 세트를 1개 이상 완료한 루틴 세션 중 가장 최근 (기준일 포함)
+function lastRoutine(upto) {
+  for (let i = S.sessions.length - 1; i >= 0; i--) {
+    const x = S.sessions[i];
+    if (x.routineKey && x.date <= upto && x.entries.some((e) => e.sets.some((z) => z.done))) return { key: x.routineKey, date: x.date };
+  }
+  return null;
+}
+function nextKey(last) {
+  if (!last) return ROUTINE.seq[0].key;
+  const i = ROUTINE.seq.findIndex((x) => x.key === last.key);
+  return ROUTINE.seq[(i + 1) % ROUTINE.seq.length].key;
+}
+// 순서별 마지막으로 한 날짜
+function lastDateOf(k, upto = today()) {
+  for (let i = S.sessions.length - 1; i >= 0; i--) {
+    const x = S.sessions[i];
+    if (x.routineKey === k && x.date <= upto && x.entries.some((e) => e.sets.some((z) => z.done))) return x.date;
+  }
+  return null;
+}
+function agoText(d, base) {
+  const n = Math.round((new Date(base + 'T00:00:00') - new Date(d + 'T00:00:00')) / 86400000);
+  return n <= 0 ? '오늘' : n === 1 ? '어제' : `${n}일 전`;
+}
 
 function renderRoutine() {
-  const order = [1, 2, 3, 4, 5, 6, 0]; const todayDw = new Date().getDay();
-  const D = ROUTINE.days[routineDay];
+  const last = lastRoutine(today()); const nk = nextKey(last);
+  const k = routineKey || nk; const D = dayOf(k);
   let h = `<div class="card"><h3 style="margin-bottom:2px">${esc(ROUTINE.title)}</h3><div class="muted">${esc(ROUTINE.desc)}</div>
-    <div class="week">${order.map((d) => { const x = ROUTINE.days[d];
-      return `<button class="wd ${d === routineDay ? 'on' : ''} ${x.rest ? 'rest' : ''} ${d === todayDw ? 'is-today' : ''}" data-act="see-day" data-d="${d}"><b>${WEEK[d]}</b><span>${esc(x.label)}</span></button>`; }).join('')}</div></div>`;
-  h += `<div class="card"><div class="muted">${WEEK[routineDay]}요일 · ${esc(D.label)}</div><h2 style="margin:2px 0 4px">${esc(D.title)}</h2>
+    ${last ? `<div class="lastbox">마지막: <b>${last.key} · ${esc(dayOf(last.key).label)}</b> · ${fmtDate(last.date)} (${agoText(last.date, today())}) → 다음: <b class="accent">${nk}</b></div>` : ''}
+    <div class="week">${ROUTINE.seq.map((x) => { const ld = lastDateOf(x.key);
+      return `<button class="wd ${x.key === k ? 'on' : ''} ${x.rest ? 'rest' : ''} ${x.key === nk ? 'is-today' : ''}" data-act="see-day" data-k="${x.key}"><b>${x.key}</b><span>${esc(x.label)}</span><span class="ld">${ld ? ld.slice(5).replace('-', '/') : '-'}</span></button>`; }).join('')}</div>
+    <div class="muted" style="margin-top:6px;font-size:12px">초록 테두리 = 다음 순서 · 아래 날짜 = 마지막으로 한 날</div></div>`;
+  const ld = lastDateOf(k);
+  h += `<div class="card"><div class="muted">${k} · ${esc(D.label)}${k === nk ? ' · <span class="accent">다음 순서</span>' : ''}${ld ? ` · 마지막 ${fmtDate(ld)}` : ' · 아직 안 함'}</div>
+    <h2 style="margin:2px 0 4px">${esc(D.title)}</h2>
     <div class="muted">${esc(D.time)} · 강도 ${esc(D.level)}</div>`;
-  if (D.variants) h += `<div class="chips" style="margin-top:10px">${Object.entries(D.variants).map(([k, v]) => `<button class="chip ${k === routineVar ? 'on' : ''}" data-act="routine-var" data-v="${k}">${esc(v.label)}</button>`).join('')}</div>`;
-  const items = dayItems(routineDay, routineVar);
-  h += items.map((it, i) => {
-    const lid = itemLib(routineDay, routineVar, i, it); const L = LIB[lid]; const ph = photosOf(lid)[0];
+  h += D.items.map((it, i) => {
+    const lid = itemLib(k, i, it); const L = LIB[lid]; const ph = photosOf(lid)[0];
+    const exx = S.exercises.find((e) => e.libId === lid); const pv = exx && lastEntryBefore(exx.id, addDays(today(), 1));
     return `<div class="ritem">
       <div class="rthumb" data-act="guide" data-lib="${lid}">${ph ? `<img src="${ph.src}" alt="">` : `<span>${esc(L.name.slice(0, 2))}</span>`}</div>
       <div class="grow"><div class="ex-name" style="font-size:16px">${i + 1}. ${esc(L.name)}</div>
         <div class="small accent">${it.sets}세트 × ${esc(it.reps)}${/분$/.test(it.reps) ? '' : '회'}</div>
         <div class="muted">${esc(L.target)} · ${esc(L.steps[L.steps.length - 1])}</div>
+        ${pv ? `<div class="prev">지난번 ${fmtDate(pv.date)}: ${pv.entry.sets.filter((x) => x.done).map((x) => setText(exx.type, x)).join(', ')}</div>` : ''}
         ${it.alt ? `<button class="linkbtn" data-act="alt" data-i="${i}">↔ ${esc(LIB[lid === it.id ? it.alt : it.id].name)}(으)로 바꾸기</button>` : ''}
       </div>
       <button class="linkbtn" data-act="guide" data-lib="${lid}">📖</button></div>`;
-  }).join('') || `<p>${esc(D.tip)}</p>`;
-  if (items.length) h += `<p class="muted">💡 ${esc(D.tip)}</p>
-    <button class="btn primary block" data-act="load-day" data-d="${routineDay}" data-v="${routineVar}">오늘 운동으로 불러오기</button>`;
-  h += `</div>`;
-  h += `<div class="card"><h3>운동 규칙</h3>${ROUTINE.rules.map(([k, v]) => `<div class="list-item row between"><b class="small">${esc(k)}</b><span class="small" style="text-align:right">${esc(v)}</span></div>`).join('')}
+  }).join('');
+  h += `<p class="muted">💡 ${esc(D.tip)}</p>
+    <button class="btn primary block" data-act="load-day" data-k="${k}">${k} 오늘 운동으로 불러오기</button></div>`;
+  h += `<div class="card"><h3>운동 규칙</h3>${ROUTINE.rules.map(([a, v]) => `<div class="list-item row between"><b class="small">${esc(a)}</b><span class="small" style="text-align:right">${esc(v)}</span></div>`).join('')}
     <div class="sep"></div>${ROUTINE.notes.map((n) => `<div class="muted" style="margin-bottom:4px">• ${esc(n)}</div>`).join('')}</div>
     <div class="card"><h3>기구 공통 사용 순서</h3><div class="grid2">
       <div><b class="small">상체 기구</b><ol class="steps small">${COMMON_STEPS.upper.map((x) => `<li>${esc(x)}</li>`).join('')}</ol></div>
@@ -301,11 +333,10 @@ function openGuide(libId) {
     ${ex ? `<div style="height:8px"></div><button class="btn primary block" data-act="add-ex" data-id="${ex.id}">오늘 운동에 추가</button>` : ''}`);
 }
 
-function loadDay(d, v) {
-  const items = dayItems(d, v || 'A'); if (!items.length) return;
-  const s = ensureSession(workDate);
-  items.forEach((it, i) => {
-    const lid = itemLib(d, v || 'A', i, it); const L = LIB[lid];
+function loadDay(k) {
+  const D = dayOf(k); const s = ensureSession(workDate);
+  D.items.forEach((it, i) => {
+    const lid = itemLib(k, i, it); const L = LIB[lid];
     const ex = S.exercises.find((e) => e.libId === lid);
     if (s.entries.some((e) => e.exId === ex.id)) return;
     const prev = lastEntryBefore(ex.id, workDate); const lastW = prev ? Math.max(...prev.entry.sets.filter((x) => x.done).map((x) => x.w || 0)) : null;
@@ -313,7 +344,8 @@ function loadDay(d, v) {
     const mk = () => type === 'cardio' ? { min: firstNum(it.reps) } : type === 'hold' ? { s: firstNum(it.reps) * 60 } : { w: lastW || null, r: firstNum(it.reps) };
     s.entries.push({ exId: ex.id, target: `${it.sets}×${it.reps}`, sets: Array.from({ length: it.sets }, () => ({ ...mk(), done: false })) });
   });
-  save(); go('today'); toast('루틴을 불러왔어요');
+  s.routineKey = k; routineKey = null;
+  save(); go('today'); toast(`${k} · ${D.label}을(를) 불러왔어요`);
 }
 
 /* ---------- 운동 선택 모달 ---------- */
@@ -419,7 +451,7 @@ function renderHistory() {
   if (!list.length) h += `<div class="empty">아직 기록이 없습니다.</div>`;
   for (const s of list) {
     const st = sessionStats(s);
-    h += `<div class="card"><div class="row between"><b>${fmtDate(s.date)}</b>
+    h += `<div class="card"><div class="row between"><b>${fmtDate(s.date)}${s.routineKey ? ` · <span class="accent">${s.routineKey} ${esc(dayOf(s.routineKey).label)}</span>` : ''}</b>
       <div class="row"><button class="btn sm" data-act="open-day" data-date="${s.date}">열기</button></div></div>
       <div class="muted">${st.doneSets}세트${st.vol ? ' · ' + Math.round(st.vol).toLocaleString() + 'kg' : ''}${st.cardio ? ' · 유산소 ' + st.cardio + '분' : ''}</div>
       <div style="margin-top:6px">${s.entries.map((en) => {
@@ -810,11 +842,10 @@ document.addEventListener('click', (e) => {
     case 'timer-stop': timer && (timer.onDone = null); return stopTimer();
     case 'open-day': workDate = b.dataset.date; return go('today');
     case 'snap': return snapEquipment();
-    case 'see-day': routineDay = +b.dataset.d; if (tab !== 'routine') go('routine'); else render(); return;
-    case 'routine-var': routineVar = b.dataset.v; return render();
-    case 'alt': { const k = `${routineDay}-${routineVar}-${i}`; const it = dayItems(routineDay, routineVar)[i]; altPick[k] = (altPick[k] || it.id) === it.id ? it.alt : it.id; return render(); }
+    case 'see-day': routineKey = b.dataset.k; if (tab !== 'routine') go('routine'); else render(); return;
+    case 'alt': { const rk = routineKey || nextKey(lastRoutine(today())); const k = `${rk}-${i}`; const it = dayOf(rk).items[i]; altPick[k] = (altPick[k] || it.id) === it.id ? it.alt : it.id; return render(); }
     case 'guide': return openGuide(b.dataset.lib);
-    case 'load-day': return loadDay(+b.dataset.d, b.dataset.v);
+    case 'load-day': return loadDay(b.dataset.k);
     case 'care-sub': careSub = b.dataset.k; return render();
     case 'credits': return openCredits();
     case 'go-settings': closeModal(); go('history'); setTimeout(() => $('#apiKey')?.scrollIntoView({ block: 'center' }), 50); return;
