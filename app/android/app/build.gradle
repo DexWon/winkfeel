@@ -1,5 +1,8 @@
 apply plugin: 'com.android.application'
 
+// CI에서 VERSION_CODE(빌드 번호)를 넘겨 매 업로드마다 자동 증가
+def appVersionCode = Integer.parseInt(System.getenv("VERSION_CODE") ?: "1")
+
 android {
     namespace = "kr.co.dexwon.jagigwanri"
     compileSdk = rootProject.ext.compileSdkVersion
@@ -7,8 +10,7 @@ android {
         applicationId "kr.co.dexwon.jagigwanri"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        // CI에서 VERSION_CODE(빌드 번호)를 넘겨 매 업로드마다 자동 증가
-        versionCode (System.getenv("VERSION_CODE") ?: "1").toInteger()
+        versionCode appVersionCode
         versionName "1.0.0"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
