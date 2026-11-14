@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#0f1115">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="자기관리해요">
+  <title>자기관리해요</title>
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div id="intro" role="button" aria-label="시작하기">
+    <div class="intro-in">
+      <img class="intro-logo" src="icons/icon.svg" alt="">
+      <div class="intro-kicker">기구 사진으로 배우는 운동 루틴</div>
+      <h1 class="intro-title">자기관리해요</h1>
+      <div class="intro-line"></div>
+      <p class="intro-msg" id="introMsg">오늘도 한 세트 더.</p>
+      <p class="intro-next" id="introNext"></p>
+    </div>
+    <div class="intro-foot">
+      <img class="intro-brand" src="img/dexwon-logo-white.png" alt="DexWon">
+      <div class="intro-tap">화면을 누르면 시작해요</div>
+    </div>
+  </div>
+  <header class="topbar">
+    <h1 id="title">오늘</h1>
+    <div class="row" style="gap:4px"><div id="topActions"></div><button class="icon-btn gear" data-act="settings" aria-label="설정">⚙️</button></div>
+  </header>
+
+  <main id="view"></main>
+
+  <div id="timer" class="timer hidden" role="timer" aria-live="polite">
+    <div class="timer-label" id="timerLabel">휴식</div>
+    <div class="timer-time" id="timerTime">0:00</div>
+    <div class="timer-btns">
+      <button data-act="timer-add" data-sec="-15">−15</button>
+      <button data-act="timer-add" data-sec="15">+15</button>
+      <button data-act="timer-stop" class="ghost">종료</button>
+    </div>
+  </div>
+
+  <nav class="tabbar">
+    <button data-tab="today" class="active"><span>🏋️</span>오늘</button>
+    <button data-tab="routine"><span>🗓️</span>루틴</button>
+    <button data-tab="history"><span>📅</span>기록</button>
+    <button data-tab="progress"><span>📈</span>진척</button>
+    <button data-tab="care"><span>💚</span>몸관리</button>
+  </nav>
+
+  <dialog id="modal"><div id="modalBody"></div></dialog>
+
+  <script src="program.js"></script>
+  <script src="photos-commons.js"></script>
+  <script src="photos.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
