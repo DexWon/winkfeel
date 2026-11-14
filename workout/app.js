@@ -600,7 +600,7 @@ function openCredits() {
   for (const [lid, arr] of Object.entries(typeof PHOTOS !== 'undefined' ? PHOTOS : {})) for (const p of arr) if (p.credit) rows.push({ name: LIB[lid]?.name || lid, ...p });
   const seen = new Set();
   openModal(`<div class="row between"><h2 style="margin:0">사진 출처</h2><button class="icon-btn" data-act="close">✕</button></div>
-    <p class="muted">위키미디어 공용(Wikimedia Commons)의 자유 라이선스 이미지를 사용했습니다. 크기만 줄였고 내용은 바꾸지 않았습니다. 별도 표기가 없는 기구 사진은 앱 제작자가 직접 촬영한 사진입니다.</p>
+    <p class="muted">위키미디어 공용(Wikimedia Commons)의 자유 라이선스 이미지를 사용했습니다. 크기와 파일 형식(JPG)만 바꿨고 내용은 그대로입니다. 별도 표기가 없는 기구 사진은 앱 제작자가 직접 촬영한 사진입니다.</p>
     ${rows.filter((r) => !seen.has(r.src) && seen.add(r.src)).map((r) => `<div class="list-item small"><b>${esc(r.name)}</b><br><span class="muted">${esc(r.credit)}</span>
       ${r.page ? `<br><a href="${r.page}" target="_blank" rel="noopener">원본</a>` : ''}${r.license_url ? ` · <a href="${r.license_url}" target="_blank" rel="noopener">라이선스</a>` : ''}</div>`).join('')}`);
 }
