@@ -4,5 +4,11 @@
   "webDir": "../workout",
   "android": {
     "backgroundColor": "#0f1115"
+  },
+  "plugins": {
+    "LocalNotifications": {
+      "smallIcon": "ic_stat_icon",
+      "iconColor": "#4ADE80"
+    }
   }
 }

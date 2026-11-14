@@ -210,6 +210,48 @@ a.btn { display: block; text-align: center; text-decoration: none; color: var(--
 .intro-msg { margin: 0; font-size: 17px; color: #e9ecf1; }
 .intro-next { margin: 14px 0 0; font-size: 15px; color: #b9c0cc; line-height: 1.6; }
 .intro-next b { color: #4ade80; }
-.intro-tap { position: absolute; bottom: calc(28px + env(safe-area-inset-bottom)); left: 0; right: 0; text-align: center; font-size: 12px; color: #8a92a3; }
+.intro-foot { position: absolute; bottom: calc(24px + env(safe-area-inset-bottom)); left: 0; right: 0; text-align: center; }
+.intro-brand { height: 46px; opacity: .9; }
+.intro-tap { margin-top: 10px; font-size: 12px; color: #8a92a3; }
+.made-by { text-align: center; margin: 18px 0 6px; }
+.made-by img { height: 34px; opacity: .55; }
+.made-by div { font-size: 11px; color: var(--muted); margin-top: 4px; }
 @keyframes introUp { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
 @media (prefers-reduced-motion: reduce) { .intro-in { animation: none; } #intro { transition: none; } }
+.up { font-size: 12px; color: #fcd34d; margin-top: 2px; }
+.upbox { position: relative; margin: 10px 0 4px; padding: 10px 12px; border-radius: 12px; background: #2c2408; border: 1px solid #6b5313; color: #fcd34d; font-size: 14px; }
+.upbox .muted { font-size: 12px; }
+.upbox .btn { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); }
+.gear { font-size: 20px; }
+.toggle { display: flex; align-items: center; gap: 10px; padding: 8px 0; font-size: 15px; }
+.toggle input { width: 22px; height: 22px; accent-color: var(--accent); }
+/* 큰 글씨 모드 */
+body.big { font-size: 19px; }
+body.big .set { grid-template-columns: 34px 1fr 1fr 60px; }
+body.big .set.one { grid-template-columns: 34px 1fr 60px; }
+body.big .set input { font-size: 22px; min-height: 54px; }
+body.big .chk { width: 58px; height: 54px; font-size: 22px; }
+body.big .btn { min-height: 52px; font-size: 18px; }
+body.big .ex-name { font-size: 20px; }
+body.big .timer-time { font-size: 38px; }
+body.big .tabbar button { font-size: 13px; }
+/* 출석 달력 */
+.bar { height: 10px; background: var(--card2); border-radius: 99px; overflow: hidden; margin-top: 8px; }
+.bar div { height: 100%; background: var(--accent); border-radius: 99px; }
+.cal { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; margin-top: 8px; }
+.cdow { text-align: center; font-size: 11px; color: var(--muted); }
+.cday { aspect-ratio: 1; border: 0; border-radius: 10px; background: var(--card2); color: var(--muted); font-size: 12px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px; padding: 0; }
+.cday.on { background: color-mix(in srgb, var(--c) 28%, var(--card)); color: var(--text); border: 1px solid var(--c); }
+.cday.on i { font-style: normal; font-weight: 800; font-size: 11px; color: var(--c); }
+.cday.is-today { outline: 2px solid var(--text); outline-offset: -2px; }
+/* 근육 지도 */
+.bodywrap { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; max-width: 320px; margin: 4px auto 0; }
+svg.body { width: 100%; height: auto; }
+svg.body text { fill: var(--muted); font-size: 11px; }
+.legend { display: flex; justify-content: center; gap: 10px; font-size: 11px; color: var(--muted); margin-top: 6px; flex-wrap: wrap; }
+.legend i { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 3px; vertical-align: -1px; }
+.ditem { padding: 10px 0; border-bottom: 1px solid var(--line); }
+.ditem .row { gap: 6px; }
+.ditem .row .small { white-space: nowrap; }
+.ditem .row input { flex: none; padding: 8px 6px; text-align: center; }
+.ditem .row .icon-btn { padding: 6px 4px; }
