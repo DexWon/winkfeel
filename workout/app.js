@@ -898,4 +898,20 @@ document.addEventListener('visibilitychange', () => { if (!document.hidden && ta
 
 /* ---------- 시작 ---------- */
 load(); render();
+// 첫 화면(대문): 2.5초 보여 주고 사라짐, 누르면 바로 시작
+(function intro() {
+  const el = $('#intro'); if (!el) return;
+  try {
+    const last = lastRoutine(today()); const nk = nextKey(last); const D = dayOf(nk);
+    $('#introNext').innerHTML = last
+      ? `오늘은 <b>${nk} · ${esc(D.label)}</b> 차례예요<br><span style="font-size:13px">마지막 운동 ${last.key} · ${esc(dayOf(last.key).label)} (${fmtDate(last.date)}, ${agoText(last.date, today())})</span>`
+      : `첫 운동은 <b>A · ${esc(D.label)}</b>부터 시작해요`;
+  } catch {}
+  const hour = new Date().getHours();
+  $('#introMsg').textContent = hour < 11 ? '좋은 아침이에요. 오늘도 한 세트 더.' : hour < 18 ? '오늘도 한 세트 더.' : '오늘 하루도 수고했어요. 가볍게라도 움직여요.';
+  let done = false;
+  const close = () => { if (done) return; done = true; el.classList.add('out'); setTimeout(() => el.classList.add('gone'), 500); };
+  el.addEventListener('click', close);
+  setTimeout(close, 2500);
+})();
 if ('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('sw.js').catch(() => {});

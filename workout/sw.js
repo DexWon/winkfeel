@@ -1,5 +1,5 @@
 // 오프라인 지원: 앱 파일을 캐시해 헬스장에서 인터넷이 없어도 동작
-const CACHE = 'jagigwanri-v3';
+const CACHE = 'jagigwanri-v4';
 const ASSETS = ['./', 'index.html', 'style.css', 'program.js', 'photos-commons.js', 'photos.js', 'app.js', 'manifest.webmanifest', 'icons/icon.svg', 'icons/icon-192.png', 'icons/icon-512.png'];
 self.addEventListener('install', (e) => { e.waitUntil(caches.open(CACHE).then((c) => c.addAll(ASSETS))); self.skipWaiting(); });
 self.addEventListener('activate', (e) => {

@@ -196,3 +196,20 @@ a.btn { display: block; text-align: center; text-decoration: none; color: var(--
 .week { grid-template-columns: repeat(7, 1fr); }
 .wd .ld { font-size: 10px; opacity: .8; }
 .lastbox { margin-top: 10px; padding: 8px 10px; border-radius: 10px; background: var(--card2); font-size: 14px; }
+/* 첫 화면(대문) */
+#intro { position: fixed; inset: 0; z-index: 100; display: flex; align-items: center; justify-content: center;
+  background: #0b0d12 url('img/intro.jpg') center / cover no-repeat; color: #fff; transition: opacity .45s ease; cursor: pointer; }
+#intro::before { content: ''; position: absolute; inset: 0; background: linear-gradient(180deg, rgba(11,13,18,.72), rgba(11,13,18,.88)); }
+#intro.out { opacity: 0; pointer-events: none; }
+#intro.gone { display: none; }
+.intro-in { position: relative; text-align: center; padding: 0 28px; animation: introUp .7s ease both; }
+.intro-logo { width: 84px; height: 84px; border-radius: 22px; box-shadow: 0 10px 30px rgba(0,0,0,.5); }
+.intro-kicker { margin-top: 22px; color: #c6f432; font-size: 14px; letter-spacing: .3px; }
+.intro-title { margin: 8px 0 0; font-size: 40px; font-weight: 800; letter-spacing: -1px; }
+.intro-line { width: 48px; height: 4px; background: #c6f432; margin: 18px auto; border-radius: 2px; }
+.intro-msg { margin: 0; font-size: 17px; color: #e9ecf1; }
+.intro-next { margin: 14px 0 0; font-size: 15px; color: #b9c0cc; line-height: 1.6; }
+.intro-next b { color: #4ade80; }
+.intro-tap { position: absolute; bottom: calc(28px + env(safe-area-inset-bottom)); left: 0; right: 0; text-align: center; font-size: 12px; color: #8a92a3; }
+@keyframes introUp { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .intro-in { animation: none; } #intro { transition: none; } }
