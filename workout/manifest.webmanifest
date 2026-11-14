@@ -1,7 +1,7 @@
 {
-  "name": "운동일지",
-  "short_name": "운동일지",
-  "description": "웨이트·필라테스·PT 과제·신체측정을 한 곳에 기록하는 개인 운동일지",
+  "name": "자기관리해요",
+  "short_name": "자기관리해요",
+  "description": "기구 사진으로 배우는 주 4일 분할 루틴과 운동 기록·몸관리 앱",
   "lang": "ko",
   "start_url": "./",
   "scope": "./",

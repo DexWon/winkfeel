@@ -1,0 +1,8 @@
+{
+  "appId": "kr.co.dexwon.jagigwanri",
+  "appName": "자기관리해요",
+  "webDir": "../workout",
+  "android": {
+    "backgroundColor": "#0f1115"
+  }
+}

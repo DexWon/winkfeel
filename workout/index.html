@@ -6,8 +6,8 @@
   <meta name="theme-color" content="#0f1115">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="apple-mobile-web-app-title" content="운동일지">
-  <title>운동일지</title>
+  <meta name="apple-mobile-web-app-title" content="자기관리해요">
+  <title>자기관리해요</title>
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="icons/icon-192.png">
@@ -33,14 +33,17 @@
 
   <nav class="tabbar">
     <button data-tab="today" class="active"><span>🏋️</span>오늘</button>
+    <button data-tab="routine"><span>🗓️</span>루틴</button>
     <button data-tab="history"><span>📅</span>기록</button>
     <button data-tab="progress"><span>📈</span>진척</button>
-    <button data-tab="body"><span>⚖️</span>신체</button>
-    <button data-tab="pt"><span>✅</span>PT과제</button>
+    <button data-tab="care"><span>💚</span>몸관리</button>
   </nav>
 
   <dialog id="modal"><div id="modalBody"></div></dialog>
 
+  <script src="program.js"></script>
+  <script src="photos-commons.js"></script>
+  <script src="photos.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

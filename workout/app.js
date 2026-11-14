@@ -1,4 +1,4 @@
-/* 운동일지 — 개인 운동 기록 PWA (데이터는 이 기기의 localStorage에만 저장) */
+/* 자기관리해요 — 운동 기록 · 기구 루틴 앱 (데이터는 이 기기에만 저장) */
 'use strict';
 
 /* ---------- 유틸 ---------- */
@@ -29,32 +29,16 @@ const TYPES = {
 const CATS = ['하체', '등', '가슴', '어깨', '팔', '코어', '필라테스', '호흡', '유산소', '기타'];
 
 const SEED_EXERCISES = [
-  ['스쿼트', 'weight', '하체'], ['데드리프트', 'weight', '하체'], ['루마니안 데드리프트', 'weight', '하체'],
-  ['레그프레스', 'weight', '하체'], ['런지', 'weight', '하체'], ['힙 쓰러스트', 'weight', '하체'],
-  ['힌지 드릴', 'reps', '하체', '좌골뼈 천장 방향, 엉덩이 텐션 유지'],
-  ['맨몸 스쿼트 드릴', 'reps', '하체', '발 11자·발바닥 셋점, 발목 외회전 텐션'],
-  ['랫풀다운', 'weight', '등', '손볼 지지 + 새끼손가락 관절'], ['시티드 로우', 'weight', '등'], ['덤벨 로우', 'weight', '등'],
-  ['벤치프레스', 'weight', '가슴', '검지·중지 지지, 전거근 세팅'], ['덤벨 프레스', 'weight', '가슴'], ['푸시업', 'reps', '가슴'],
-  ['숄더프레스', 'weight', '어깨'], ['사이드 레터럴 레이즈', 'weight', '어깨'],
-  ['바이셉 컬', 'weight', '팔'], ['트라이셉 푸시다운', 'weight', '팔'],
-  ['플랭크', 'hold', '코어'], ['네발기기 호버', 'hold', '코어', '무릎 1~2cm 띄워 10초+, 손바닥 전체 접지'],
-  ['덤벨 데드버그(5kg)', 'reps', '코어', '덤벨 천장으로 밀며 테이블탑·뒤꿈치 터치'],
-  ['대각선 사지 교차', 'reps', '코어'],
-  ['하프 롤업', 'reps', '필라테스'], ['풀 롤업', 'reps', '필라테스'], ['롤다운', 'reps', '필라테스', '스쿱 → 척추 하나씩, 머리 마지막'],
-  ['호흡 (8~10초 날숨)', 'hold', '호흡', '갈비뼈 3D 확장 들숨 → 8~10초 날숨'],
-  ['자전거', 'cardio', '유산소'], ['러닝머신', 'cardio', '유산소'], ['걷기', 'cardio', '유산소'], ['천국의 계단', 'cardio', '유산소'],
+  ['스쿼트', 'weight', '하체'], ['데드리프트', 'weight', '하체'], ['루마니안 데드리프트', 'weight', '하체'], ['런지', 'weight', '하체'],
+  ['랫풀다운', 'weight', '등'], ['시티드 로우', 'weight', '등'], ['덤벨 로우', 'weight', '등'],
+  ['벤치프레스', 'weight', '가슴'], ['덤벨 프레스', 'weight', '가슴'], ['푸시업', 'reps', '가슴'],
+  ['사이드 레터럴 레이즈', 'weight', '어깨'], ['바이셉 컬', 'weight', '팔'], ['트라이셉 푸시다운', 'weight', '팔'],
+  ['플랭크', 'hold', '코어'], ['크런치', 'reps', '코어'], ['데드버그', 'reps', '코어'],
+  ['롤업', 'reps', '필라테스'], ['호흡 연습', 'hold', '호흡'],
+  ['자전거', 'cardio', '유산소'], ['러닝머신', 'cardio', '유산소'], ['천국의 계단', 'cardio', '유산소'],
 ];
-
-// 2026-10-27 PT 세션 과제
-const SEED_TASKS = [
-  '호흡·복압: 코 들숨(갈비뼈 3D 확장) → 입으로 8~10초 날숨 ×3세트, 대화 중 \'배 빵빵\' 유지',
-  '골반 인지: 스쿱 / 중립(허리 뒤 손바닥 하나) / 오리 엉덩이 — 누워서·서서·힌지 자세 비교',
-  '손목 보호 접지: 네발기기 시 손가락 끝 대신 손바닥 전체·엄지 손등으로 지지, 흉추 밀어올리기',
-  '웨이트 그립: 등 운동 = 새끼손가락 관절·외회전 / 가슴 운동 = 검지·중지 + 전거근 세팅',
-  '롤업/롤다운: 턱 당기고 정수리 길게, 목 긴장 없이 하복부·흉곽 호흡 연결',
-  '스쿼트·힌지: 발 11자 셋점 접지 + 발목 외회전 텐션, 힌지는 좌골뼈 천장·엉덩이 텐션 유지',
-];
-const PAIN_PARTS = ['손목', '종아리', '허리', '어깨', '무릎'];
+const SEED_TASKS = [];
+const PAIN_PARTS = ['허리', '어깨', '무릎', '손목', '종아리'];
 
 /* ---------- 상태 저장 ---------- */
 const KEY = 'workoutlog.v1';
@@ -71,6 +55,14 @@ function defaultState() {
     settings: { rest: 90, sound: true },
   };
 }
+// 루틴 라이브러리(LIB) 운동을 내 운동 목록에 연결 (없으면 추가)
+function syncLibrary() {
+  for (const [libId, L] of Object.entries(LIB)) {
+    let ex = S.exercises.find((e) => e.libId === libId) || S.exercises.find((e) => !e.libId && e.name.replace(/\s/g, '') === L.name.replace(/\s/g, ''));
+    if (!ex) { ex = { id: uid(), name: L.name, type: L.type || 'weight', cat: L.cat, note: '' }; S.exercises.push(ex); }
+    ex.libId = libId;
+  }
+}
 function load() {
   try {
     const raw = localStorage.getItem(KEY);
@@ -78,6 +70,7 @@ function load() {
   } catch { S = defaultState(); }
   const d = defaultState();
   for (const k of Object.keys(d)) if (S[k] == null) S[k] = d[k];
+  syncLibrary();
   save();
 }
 function save() {
@@ -87,7 +80,7 @@ function save() {
 const exById = (id) => S.exercises.find((e) => e.id === id) || { name: '(삭제된 운동)', type: 'weight', cat: '기타' };
 
 /* ---------- 라우팅 ---------- */
-const TITLES = { today: '오늘', history: '기록', progress: '진척', body: '신체측정', pt: 'PT 과제 · 컨디션' };
+const TITLES = { today: '오늘', routine: '루틴', history: '기록', progress: '진척', care: '몸관리' };
 let tab = 'today';
 let workDate = today();
 let progressEx = null;
@@ -102,7 +95,7 @@ function go(t) {
 function render() {
   $('#title').textContent = tab === 'today' && workDate !== today() ? fmtDate(workDate) : TITLES[tab];
   $('#topActions').innerHTML = '';
-  ({ today: renderToday, history: renderHistory, progress: renderProgress, body: renderBody, pt: renderPT })[tab]();
+  ({ today: renderToday, routine: renderRoutine, history: renderHistory, progress: renderProgress, care: renderCare })[tab]();
 }
 
 /* ---------- 세션 ---------- */
@@ -185,7 +178,15 @@ function renderToday() {
     h += `<label class="field"><span>오늘 메모 (컨디션, 트레이너 피드백 등)</span>
       <textarea data-act="sess-note">${esc(s.note)}</textarea></label>`;
   } else {
-    h += `<div class="empty">${workDate === today() ? '오늘' : fmtDate(workDate)} 기록이 없습니다.<br>아래에서 운동을 추가하세요.</div>`;
+    const dw = new Date(workDate + 'T00:00:00').getDay(); const D = ROUTINE.days[dw];
+    h += `<div class="card routine-hero"><div class="muted">${WEEK[dw]}요일 루틴</div>
+      <h2 style="margin:2px 0 4px">${esc(D.label)} · ${esc(D.title)}</h2>
+      <div class="muted">${esc(D.time)} · 강도 ${esc(D.level)}</div>
+      ${D.rest && !D.items.length ? `<p class="small">${esc(D.tip)}</p>` : `<div class="row" style="margin-top:10px">
+        <button class="btn grow" data-act="see-day" data-d="${dw}">루틴 보기</button>
+        <button class="btn primary grow" data-act="load-day" data-d="${dw}"${D.variants ? ' data-v="A"' : ''}>${D.variants ? '보충 A 불러오기' : '오늘 루틴 불러오기'}</button></div>`}
+    </div>`;
+    h += `<div class="empty" style="padding:14px">${workDate === today() ? '오늘' : fmtDate(workDate)} 기록이 없습니다. 루틴을 불러오거나 직접 운동을 추가하세요.</div>`;
     const rec = recentExercises(6);
     if (rec.length) h += `<div class="card"><h3>최근 한 운동</h3><div class="row wrap">${rec.map((e) => `<button class="chip" data-act="add-ex" data-id="${e.id}">${esc(e.name)}</button>`).join('')}</div></div>`;
   }
@@ -205,10 +206,12 @@ function entryCard(s, en, i) {
   const m = metricOf(ex.type, en.sets); const k = MAIN_METRIC[ex.type][0];
   const isPR = m && m[k] > 0 && m[k] > bestBefore(en.exId, s.date) && history(en.exId).some((h) => h.date < s.date);
   let h = `<div class="card" data-entry="${i}">
-    <div class="ex-head">${ex.photo ? `<img class="ex-thumb" src="${ex.photo}" alt="">` : ''}<div class="grow">
+    <div class="ex-head">${thumbOf(ex) ? `<img class="ex-thumb" src="${thumbOf(ex)}" alt="" ${ex.libId ? `data-act="guide" data-lib="${ex.libId}"` : ''}>` : ''}<div class="grow">
       <div class="ex-name">${esc(ex.name)} ${isPR ? '<span class="tag pr">🏆 PR</span>' : ''}</div>
       <div class="muted">${T.label}${ex.note ? ' · ' + esc(ex.note) : ''}</div>
-      <a class="yt" href="${ytUrl(ex)}" target="_blank" rel="noopener">▶ 사용법 영상</a>
+      <div class="row wrap" style="gap:10px;margin-top:4px">${en.target ? `<span class="tag">목표 ${esc(en.target)}</span>` : ''}
+        ${ex.libId && LIB[ex.libId] ? `<button class="linkbtn" data-act="guide" data-lib="${ex.libId}">📖 사용법</button>` : ''}
+        <a class="yt" href="${ytUrl(ex)}" target="_blank" rel="noopener">▶ 영상</a></div>
     </div>
     <button class="icon-btn" data-act="entry-menu" data-i="${i}" aria-label="메뉴">⋯</button></div>
     <div class="sets">`;
@@ -241,6 +244,76 @@ function addExercise(exId) {
   s.entries.push({ exId, sets });
   save(); closeModal(); render();
   setTimeout(() => window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' }), 50);
+}
+
+/* ---------- 루틴 ---------- */
+let routineDay = new Date().getDay();
+let routineVar = 'A';
+const altPick = {}; // `${day}-${variant}-${idx}` → 선택한 libId
+const photosOf = (libId) => (typeof PHOTOS !== 'undefined' && PHOTOS[libId]) || [];
+const thumbOf = (ex) => ex.photo || (ex.libId && photosOf(ex.libId)[0]?.src) || '';
+const firstNum = (r) => { const m = String(r).match(/\d+/); return m ? +m[0] : 10; };
+function dayItems(d, v) { const D = ROUTINE.days[d]; return D.variants ? D.variants[v].items : D.items; }
+function itemLib(d, v, i, it) { return altPick[`${d}-${v}-${i}`] || it.id; }
+
+function renderRoutine() {
+  const order = [1, 2, 3, 4, 5, 6, 0]; const todayDw = new Date().getDay();
+  const D = ROUTINE.days[routineDay];
+  let h = `<div class="card"><h3 style="margin-bottom:2px">${esc(ROUTINE.title)}</h3><div class="muted">${esc(ROUTINE.desc)}</div>
+    <div class="week">${order.map((d) => { const x = ROUTINE.days[d];
+      return `<button class="wd ${d === routineDay ? 'on' : ''} ${x.rest ? 'rest' : ''} ${d === todayDw ? 'is-today' : ''}" data-act="see-day" data-d="${d}"><b>${WEEK[d]}</b><span>${esc(x.label)}</span></button>`; }).join('')}</div></div>`;
+  h += `<div class="card"><div class="muted">${WEEK[routineDay]}요일 · ${esc(D.label)}</div><h2 style="margin:2px 0 4px">${esc(D.title)}</h2>
+    <div class="muted">${esc(D.time)} · 강도 ${esc(D.level)}</div>`;
+  if (D.variants) h += `<div class="chips" style="margin-top:10px">${Object.entries(D.variants).map(([k, v]) => `<button class="chip ${k === routineVar ? 'on' : ''}" data-act="routine-var" data-v="${k}">${esc(v.label)}</button>`).join('')}</div>`;
+  const items = dayItems(routineDay, routineVar);
+  h += items.map((it, i) => {
+    const lid = itemLib(routineDay, routineVar, i, it); const L = LIB[lid]; const ph = photosOf(lid)[0];
+    return `<div class="ritem">
+      <div class="rthumb" data-act="guide" data-lib="${lid}">${ph ? `<img src="${ph.src}" alt="">` : `<span>${esc(L.name.slice(0, 2))}</span>`}</div>
+      <div class="grow"><div class="ex-name" style="font-size:16px">${i + 1}. ${esc(L.name)}</div>
+        <div class="small accent">${it.sets}세트 × ${esc(it.reps)}${/분$/.test(it.reps) ? '' : '회'}</div>
+        <div class="muted">${esc(L.target)} · ${esc(L.steps[L.steps.length - 1])}</div>
+        ${it.alt ? `<button class="linkbtn" data-act="alt" data-i="${i}">↔ ${esc(LIB[lid === it.id ? it.alt : it.id].name)}(으)로 바꾸기</button>` : ''}
+      </div>
+      <button class="linkbtn" data-act="guide" data-lib="${lid}">📖</button></div>`;
+  }).join('') || `<p>${esc(D.tip)}</p>`;
+  if (items.length) h += `<p class="muted">💡 ${esc(D.tip)}</p>
+    <button class="btn primary block" data-act="load-day" data-d="${routineDay}" data-v="${routineVar}">오늘 운동으로 불러오기</button>`;
+  h += `</div>`;
+  h += `<div class="card"><h3>운동 규칙</h3>${ROUTINE.rules.map(([k, v]) => `<div class="list-item row between"><b class="small">${esc(k)}</b><span class="small" style="text-align:right">${esc(v)}</span></div>`).join('')}
+    <div class="sep"></div>${ROUTINE.notes.map((n) => `<div class="muted" style="margin-bottom:4px">• ${esc(n)}</div>`).join('')}</div>
+    <div class="card"><h3>기구 공통 사용 순서</h3><div class="grid2">
+      <div><b class="small">상체 기구</b><ol class="steps small">${COMMON_STEPS.upper.map((x) => `<li>${esc(x)}</li>`).join('')}</ol></div>
+      <div><b class="small">하체 기구</b><ol class="steps small">${COMMON_STEPS.lower.map((x) => `<li>${esc(x)}</li>`).join('')}</ol></div></div></div>`;
+  $('#view').innerHTML = h;
+}
+
+function openGuide(libId) {
+  const L = LIB[libId]; const ph = photosOf(libId);
+  const ex = S.exercises.find((e) => e.libId === libId);
+  openModal(`<div class="row between"><h2 style="margin:0">${esc(L.name)}</h2><button class="icon-btn" data-act="close">✕</button></div>
+    <div class="muted">${esc(L.cat)} · ${esc(L.target)}</div>
+    ${ph.length ? `<div class="gallery">${ph.map((p) => `<figure><img src="${p.src}" alt="${esc(L.name)}" loading="lazy"><figcaption>${esc(p.caption || '')}${p.credit ? ` <span class="credit">${esc(p.credit)}</span>` : ''}</figcaption></figure>`).join('')}</div>` : `<div class="nophoto">사진 준비 중 · 아래 영상으로 확인하세요</div>`}
+    <h3 style="margin-top:12px">이렇게 하세요</h3>
+    <ol class="steps">${L.steps.map((x) => `<li>${esc(x)}</li>`).join('')}</ol>
+    ${COMMON_STEPS[L.group] ? `<details><summary class="small">기구 공통 순서 보기</summary><ol class="steps small muted">${COMMON_STEPS[L.group].map((x) => `<li>${esc(x)}</li>`).join('')}</ol></details>` : ''}
+    <a class="btn block" style="margin-top:10px" href="https://www.youtube.com/results?search_query=${encodeURIComponent(L.name + ' 기구 사용법')}" target="_blank" rel="noopener">▶ 유튜브에서 영상 보기</a>
+    ${ex ? `<div style="height:8px"></div><button class="btn primary block" data-act="add-ex" data-id="${ex.id}">오늘 운동에 추가</button>` : ''}`);
+}
+
+function loadDay(d, v) {
+  const items = dayItems(d, v || 'A'); if (!items.length) return;
+  const s = ensureSession(workDate);
+  items.forEach((it, i) => {
+    const lid = itemLib(d, v || 'A', i, it); const L = LIB[lid];
+    const ex = S.exercises.find((e) => e.libId === lid);
+    if (s.entries.some((e) => e.exId === ex.id)) return;
+    const prev = lastEntryBefore(ex.id, workDate); const lastW = prev ? Math.max(...prev.entry.sets.filter((x) => x.done).map((x) => x.w || 0)) : null;
+    const type = L.type || 'weight';
+    const mk = () => type === 'cardio' ? { min: firstNum(it.reps) } : type === 'hold' ? { s: firstNum(it.reps) * 60 } : { w: lastW || null, r: firstNum(it.reps) };
+    s.entries.push({ exId: ex.id, target: `${it.sets}×${it.reps}`, sets: Array.from({ length: it.sets }, () => ({ ...mk(), done: false })) });
+  });
+  save(); go('today'); toast('루틴을 불러왔어요');
 }
 
 /* ---------- 운동 선택 모달 ---------- */
@@ -371,6 +444,7 @@ function settingsCard() {
     <div class="sep"></div>
     <label class="field"><span>Claude API 키 (기구 사진 인식용 · 이 폰에만 저장, 백업 파일에 포함 안 됨)</span>
       <div class="row"><input type="password" id="apiKey" placeholder="sk-ant-..." value="${getKey() ? '••••••••' : ''}" autocomplete="off"><button class="btn sm" data-act="key-save">저장</button></div></label>
+    <div class="row wrap" style="margin-top:10px"><button class="btn sm" data-act="credits">사진 출처</button><a class="btn sm" style="display:inline-block" href="https://dexwon.github.io/winkfeel/workout/privacy.html" target="_blank" rel="noopener">개인정보처리방침</a></div>
     <p class="muted">데이터는 이 기기 브라우저에만 저장됩니다. 주기적으로 백업 파일을 내보내 구글 드라이브 등에 보관하세요.</p>
   </div>`;
 }
@@ -428,6 +502,11 @@ function lineChart(cv, pts, unit = '', color = '#4ade80') {
 /* ---------- 신체측정 ---------- */
 const BODY_FIELDS = [['weight', '체중', 'kg'], ['muscle', '골격근량', 'kg'], ['fat', '체지방률', '%'], ['waist', '허리둘레', 'cm']];
 let bodyMetric = 'weight';
+let careSub = 'body';
+function renderCare() {
+  (careSub === 'body' ? renderBody : renderPT)();
+  $('#view').insertAdjacentHTML('afterbegin', `<div class="chips seg"><button class="chip ${careSub === 'body' ? 'on' : ''}" data-act="care-sub" data-k="body">신체 측정</button><button class="chip ${careSub === 'cond' ? 'on' : ''}" data-act="care-sub" data-k="cond">컨디션 · 내 과제</button></div>`);
+}
 function renderBody() {
   const last = S.body[S.body.length - 1] || {};
   let h = `<div class="card"><h3>측정 입력</h3>
@@ -441,13 +520,13 @@ function renderBody() {
       <div class="card"><h3>측정 기록</h3>${S.body.slice().reverse().map((b) => `<div class="list-item row between">
         <div><b class="small">${fmtDate(b.date)}</b><div class="muted">${BODY_FIELDS.filter(([k]) => b[k] != null).map(([k, l, u]) => `${l} ${b[k]}${u}`).join(' · ')}${b.note ? ' · ' + esc(b.note) : ''}</div></div>
         <button class="icon-btn" data-act="body-del" data-id="${b.id}">🗑</button></div>`).join('')}</div>`;
-  } else h += `<div class="empty">PT 신체 측정 결과(인바디 등)를 기록해 두면 변화를 그래프로 볼 수 있어요.</div>`;
+  } else h += `<div class="empty">신체 측정 결과(인바디 등)를 기록해 두면 변화를 그래프로 볼 수 있어요.</div>`;
   $('#view').innerHTML = h;
   const u = BODY_FIELDS.find((f) => f[0] === bodyMetric)[2];
   lineChart($('#bChart'), S.body.filter((b) => b[bodyMetric] != null).map((b) => ({ x: b.date, y: b[bodyMetric] })), u, '#f59e0b');
 }
 
-/* ---------- PT 과제 · 컨디션 ---------- */
+/* ---------- 컨디션 · 내 과제 ---------- */
 let ptDate = today();
 function renderPT() {
   const active = S.tasks.filter((t) => t.active);
@@ -464,9 +543,9 @@ function renderPT() {
     return `<div title="${d} ${n}/${active.length}" style="background:${r ? `rgba(74,222,128,${0.25 + r * 0.75})` : ''}"></div>`;
   }).join('');
 
-  let h = `<div class="card"><div class="row between"><h3 style="margin:0">과제 체크 <span class="muted">${doneIds.size && active.length ? [...doneIds].filter((id) => active.some((t) => t.id === id)).length : 0}/${active.length}</span></h3>
+  let h = `<div class="card"><div class="row between"><h3 style="margin:0">내 과제 <span class="muted">${doneIds.size && active.length ? [...doneIds].filter((id) => active.some((t) => t.id === id)).length : 0}/${active.length}</span></h3>
       <button class="btn sm" data-act="task-manage">편집</button></div>
-    ${active.map((t) => `<label class="task ${doneIds.has(t.id) ? 'done' : ''}"><input type="checkbox" data-act="task-toggle" data-id="${t.id}" ${doneIds.has(t.id) ? 'checked' : ''}><span class="ttext">${esc(t.text)}</span></label>`).join('') || '<div class="muted">과제가 없습니다.</div>'}
+    ${active.map((t) => `<label class="task ${doneIds.has(t.id) ? 'done' : ''}"><input type="checkbox" data-act="task-toggle" data-id="${t.id}" ${doneIds.has(t.id) ? 'checked' : ''}><span class="ttext">${esc(t.text)}</span></label>`).join('') || '<div class="muted">매일 지킬 습관이나 트레이너가 준 과제를 \'편집\'에서 추가해 보세요.</div>'}
     <div class="muted" style="margin-top:8px">최근 14일</div><div class="heat">${heat}</div></div>`;
 
   h += `<div class="card"><h3>컨디션 · 통증</h3>
@@ -516,6 +595,16 @@ function manageExercises() {
     <div class="sep"></div><button class="btn block" data-act="new-ex-only">＋ 새 운동</button>`);
 }
 
+function openCredits() {
+  const rows = [];
+  for (const [lid, arr] of Object.entries(typeof PHOTOS !== 'undefined' ? PHOTOS : {})) for (const p of arr) if (p.credit) rows.push({ name: LIB[lid]?.name || lid, ...p });
+  const seen = new Set();
+  openModal(`<div class="row between"><h2 style="margin:0">사진 출처</h2><button class="icon-btn" data-act="close">✕</button></div>
+    <p class="muted">위키미디어 공용(Wikimedia Commons)의 자유 라이선스 이미지를 사용했습니다. 크기만 줄였고 내용은 바꾸지 않았습니다. 별도 표기가 없는 기구 사진은 앱 제작자가 직접 촬영한 사진입니다.</p>
+    ${rows.filter((r) => !seen.has(r.src) && seen.add(r.src)).map((r) => `<div class="list-item small"><b>${esc(r.name)}</b><br><span class="muted">${esc(r.credit)}</span>
+      ${r.page ? `<br><a href="${r.page}" target="_blank" rel="noopener">원본</a>` : ''}${r.license_url ? ` · <a href="${r.license_url}" target="_blank" rel="noopener">라이선스</a>` : ''}</div>`).join('')}`);
+}
+
 /* ---------- 모달 / 토스트 ---------- */
 function openModal(html) { $('#modalBody').innerHTML = html; const m = $('#modal'); if (!m.open) m.showModal(); }
 function closeModal() { const m = $('#modal'); if (m.open) m.close(); }
@@ -527,7 +616,15 @@ function toast(msg) {
 }
 
 /* ---------- 백업 ---------- */
+// 안드로이드 앱(Capacitor) 안에서 실행 중인지
+const NATIVE = !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
+async function nativeShareFile(name, text) {
+  const { Filesystem, Share } = window.Capacitor.Plugins;
+  const r = await Filesystem.writeFile({ path: name, data: text, directory: 'CACHE', encoding: 'utf8' });
+  await Share.share({ title: name, url: r.uri, dialogTitle: '백업 파일 저장·공유' });
+}
 function download(name, text, type) {
+  if (NATIVE) { nativeShareFile(name, text).catch(() => toast('파일을 내보내지 못했습니다')); return; }
   const a = document.createElement('a');
   a.href = URL.createObjectURL(new Blob([text], { type }));
   a.download = name; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 1000);
@@ -538,7 +635,7 @@ function exportCSV() {
     const ex = exById(en.exId);
     en.sets.filter((x) => x.done).forEach((x, j) => rows.push([s.date, ex.name, ex.cat, j + 1, x.w ?? '', x.r ?? '', x.s ?? '', x.min ?? '', x.km ?? '']));
   }
-  download(`운동일지_${today()}.csv`, '﻿' + rows.map((r) => r.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(',')).join('\n'), 'text/csv');
+  download(`자기관리해요_${today()}.csv`, '﻿' + rows.map((r) => r.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(',')).join('\n'), 'text/csv');
 }
 function importJSON() {
   const inp = document.createElement('input'); inp.type = 'file'; inp.accept = 'application/json,.json';
@@ -713,13 +810,20 @@ document.addEventListener('click', (e) => {
     case 'timer-stop': timer && (timer.onDone = null); return stopTimer();
     case 'open-day': workDate = b.dataset.date; return go('today');
     case 'snap': return snapEquipment();
+    case 'see-day': routineDay = +b.dataset.d; if (tab !== 'routine') go('routine'); else render(); return;
+    case 'routine-var': routineVar = b.dataset.v; return render();
+    case 'alt': { const k = `${routineDay}-${routineVar}-${i}`; const it = dayItems(routineDay, routineVar)[i]; altPick[k] = (altPick[k] || it.id) === it.id ? it.alt : it.id; return render(); }
+    case 'guide': return openGuide(b.dataset.lib);
+    case 'load-day': return loadDay(+b.dataset.d, b.dataset.v);
+    case 'care-sub': careSub = b.dataset.k; return render();
+    case 'credits': return openCredits();
     case 'go-settings': closeModal(); go('history'); setTimeout(() => $('#apiKey')?.scrollIntoView({ block: 'center' }), 50); return;
     case 'key-save': {
       const v = $('#apiKey').value.trim();
       if (v.startsWith('••')) return toast('이미 저장되어 있습니다');
       setKey(v); toast(v ? 'API 키 저장됨' : 'API 키 삭제됨'); return render();
     }
-    case 'export': return download(`운동일지_백업_${today()}.json`, JSON.stringify(S, null, 1), 'application/json');
+    case 'export': return download(`자기관리해요_백업_${today()}.json`, JSON.stringify(S, null, 1), 'application/json');
     case 'import': return importJSON();
     case 'csv': return exportCSV();
     case 'body-save': {
@@ -753,6 +857,11 @@ document.addEventListener('change', (e) => {
     S.taskLog[ptDate] = [...set]; save(); render();
   } else if (t.id === 'soundOn') { S.settings.sound = t.checked; save(); }
 });
+// 앱 안에서는 외부 링크(유튜브·출처 등)를 휴대폰 브라우저로 연다
+document.addEventListener('click', (e) => {
+  const a = e.target.closest('a[target="_blank"]');
+  if (a && NATIVE) { e.preventDefault(); window.location.href = a.href; }
+}, true);
 $('#modal').addEventListener('click', (e) => { if (e.target.id === 'modal') closeModal(); });
 document.addEventListener('visibilitychange', () => { if (!document.hidden && tab === 'today' && workDate !== today() && !sessionOf(workDate)) { workDate = today(); render(); } });
 

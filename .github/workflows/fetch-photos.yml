@@ -1,0 +1,36 @@
+# 위키미디어 공용 사진을 내려받아 앱에 넣는다 (출처·라이선스 자동 기록)
+# tools/commons_photos.json 을 바꾸거나 Actions 탭에서 손으로 실행하면 동작한다.
+name: Fetch Commons photos
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'tools/commons_photos.json'
+      - 'tools/fetch_commons_photos.py'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: fetch-photos-${{ github.ref }}
+
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install pillow==11.0.0
+      - run: python tools/fetch_commons_photos.py
+      - name: Commit photos
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add workout/img/commons workout/photos-commons.js
+          if git diff --cached --quiet; then echo "변경 없음"; exit 0; fi
+          git commit -m "Add Wikimedia Commons equipment photos with credits"
+          git push
